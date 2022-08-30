@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<head>
+  <title>WebGL - One Triangle</title>
+</head>
+<body>
+  <script type='module'>
+    // Create the canvas
+    const canvas = document.createElement('canvas');
+    canvas.width = 256;
+    canvas.height = 256;
+    document.body.appendChild(canvas);
+
+    // Get the context
+    const gl = canvas.getContext('webgl');
+    gl.viewport(0, 0, canvas.width, canvas.height);
+
+    // Create the shader program
+    const POSITION_ATTRIB = 0;
+
+    const vertShader = gl.createShader(gl.VERTEX_SHADER);
+    gl.shaderSource(vertShader, `
+      attribute vec3 position;
+      void main() {
+        gl_Position = vec4(position, 1.0);
+      }
+    `);
+    gl.compileShader(vertShader);
+
+    const fragShader = gl.createShader(gl.FRAGMENT_SHADER);
+    gl.shaderSource(fragShader, `
+      precision mediump float;
+      void main() {
+        gl_FragColor = vec4(1, 0, 0, 1);
+      }
+    `);
+    gl.compileShader(fragShader);
+
+    const program = gl.createProgram();
+    gl.attachShader(program, vertShader);
+    gl.attachShader(program, fragShader);
+    gl.bindAttribLocation(program, 'position', POSITION_ATTRIB);
+
+    gl.linkProgram(program);
+
+    // Create the vertex buffer
+    const vertexData = new Float32Array([
+      0, 1, -1,
+      -1, -1, -1,
+      1, -1, -1
+    ]);
+    const vertexBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, vertexData, gl.STATIC_DRAW);
+
+    // Draw
+    gl.clearColor(0, 0, 0, 1);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+
+    gl.useProgram(program);
+    gl.vertexAttribPointer(POSITION_ATTRIB, 3, gl.FLOAT, false, 0, 12);
+    gl.enableVertexAttribArray(POSITION_ATTRIB);
+
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+  </script>
+</body>
