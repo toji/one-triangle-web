@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<head>
+  <title>WebGPU - One Triangle</title>
+</head>
+<body>
+  <script type='module'>
+    // Create the canvas
+    const canvas = document.createElement('canvas');
+    canvas.width = 256;
+    canvas.height = 256;
+    document.body.appendChild(canvas);
+
+    // Get the context
+    const context = canvas.getContext('webgpu');
+
+    // Get the device, configure the context
+    const adapter = await navigator.gpu.requestAdapter();
+    const device = await adapter.requestDevice();
+
+    const format = navigator.gpu.getPreferredCanvasFormat();
+    context.configure({
+      device,
+      format
+    });
+
+    // Create the pipeline
+    const POSITION_ATTRIB = 0;
+
+    const shaderModule = device.createShaderModule({
+      code: `
+        @vertex
+        fn vertexMain(@location(${POSITION_ATTRIB}) position : vec3<f32>) -> @builtin(position) vec4<f32> {
+          return vec4(position, 1.0);
+        }
+
+        @fragment
+        fn fragmentMain() -> @location(0) vec4<f32> {
+          return vec4(1.0, 1.0, 0.0, 1.0);
+        }`
+    });
+
+    const pipeline = device.createRenderPipeline({
+      layout: 'auto',
+      vertex: {
+        module: shaderModule,
+        entryPoint: 'vertexMain',
+        buffers: [{
+          arrayStride: 12,
+          attributes: [{
+            shaderLocation: POSITION_ATTRIB,
+            offset: 0,
+            format: 'float32x3'
+          }]
+        }],
+      },
+      fragment: {
+        module: shaderModule,
+        entryPoint: 'fragmentMain',
+        targets: [{ format, }],
+      },
+    });
+
+
+    // Create the vertex buffer
+    const vertexData = new Float32Array([
+      0, 1, 1,
+      -0.5, 0, 1,
+      0.5, 0, 1,
+
+      -0.5, 0, 1,
+      -1, -1, 1,
+      0, -1, 1,
+
+      0.5, 0, 1,
+      0, -1, 1,
+      1, -1, 1
+    ]);
+    const vertexBuffer = device.createBuffer({
+      size: vertexData.byteLength,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+    });
+    device.queue.writeBuffer(vertexBuffer, 0, vertexData);
+
+    // Draw
+    function onFrame(t) {
+      requestAnimationFrame(onFrame);
+
+      const commandEncoder = device.createCommandEncoder();
+      const passEncoder = commandEncoder.beginRenderPass({
+        colorAttachments: [{
+          view: context.getCurrentTexture().createView(),
+          loadOp: 'clear',
+          clearValue: [
+            Math.sin(t/1000) * 0.5 + 0.5,
+            Math.sin(t/1500) * 0.5 + 0.5,
+            Math.sin(t/2000) * 0.5 + 0.5,
+            1.0],
+          storeOp: 'store',
+        }]
+      });
+
+      passEncoder.setPipeline(pipeline);
+      passEncoder.setVertexBuffer(0, vertexBuffer);
+      passEncoder.draw(9);
+
+      passEncoder.end();
+
+      device.queue.submit([commandEncoder.finish()]);
+    }
+    requestAnimationFrame(onFrame);
+  </script>
+</body>
