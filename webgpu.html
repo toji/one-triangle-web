@@ -36,8 +36,7 @@
         @fragment
         fn fragmentMain() -> @location(0) vec4<f32> {
           return vec4(1.0, 0.0, 0.0, 1.0);
-        }
-      `
+        }`
     });
 
     const pipeline = device.createRenderPipeline({
@@ -57,9 +56,7 @@
       fragment: {
         module: shaderModule,
         entryPoint: 'fragmentMain',
-        targets: [{
-          format,
-        }],
+        targets: [{ format, }],
       },
     });
 
